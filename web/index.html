@@ -24,6 +24,7 @@
       <h1>WEB SETUP <em>BUILDER.</em></h1>
       <p>Select tools, review your setup, then install everything from one button.</p>
       <div class="steps"><span class="active">01 SELECT</span><b></b><span>02 REVIEW</span><b></b><span>03 INSTALL</span></div>
+      <div id="bridge-status" class="bridge-status offline">● TERMUX BRIDGE OFFLINE</div>
     </section>
     <section id="select-screen" class="panel">
       <div class="section-head"><div><div class="eyebrow">PACKAGE LIBRARY</div><h2>Choose your tools</h2></div><div class="counter"><strong id="count">0</strong><small>SELECTED</small></div></div>
@@ -31,7 +32,7 @@
       <label class="auto-update-option"><input id="update-repo" type="checkbox"><span><strong>UPDATE ZYVORA REPO</strong><small>Run <code>git pull --ff-only</code> to fetch the latest ZYVORA WEB SETUP files before setup.</small></span></label>
       <label class="auto-update-option"><input id="auto-update" type="checkbox"><span><strong>AUTO UPDATE TERMUX</strong><small>Run <code>pkg update</code> and <code>pkg upgrade -y</code> before installing selected tools.</small></span></label>
       <div id="groups" class="groups"><div class="loading">Loading package catalog…</div></div>
-      <div class="bottom-bar"><span id="selection-note">Choose one or more tools to continue.</span><button id="review" class="primary" disabled>REVIEW SETUP <b>→</b></button></div>
+      <div class="bottom-bar"><span id="selection-note">Checking local Termux bridge…</span><button id="review" class="primary" disabled>REVIEW SETUP <b>→</b></button></div>
     </section>
     <section id="review-screen" class="panel hidden">
       <div class="eyebrow">STEP 02 / CONFIRMATION</div><h2>Review your setup</h2>
@@ -42,10 +43,10 @@
       <p class="tiny">Only predefined package selections are accepted. No arbitrary shell commands are run.</p>
     </section>
     <section id="progress-screen" class="panel hidden">
-      <div class="section-head"><div><div class="eyebrow">STEP 03 / LIVE EXECUTION</div><h2 id="progress-title">Installing packages</h2></div><div id="status-pill" class="pill">RUNNING</div></div>
+      <div class="section-head"><div><div class="eyebrow">STEP 03 / LIVE EXECUTION</div><h2 id="progress-title">Running real Termux commands</h2></div><div id="status-pill" class="pill">RUNNING</div></div>
       <div class="progress-meta"><span id="progress-label">Preparing…</span><b id="progress-percent">0%</b></div>
       <div class="progress"><i id="progress-fill"></i></div>
-      <div class="terminal"><div class="terminal-head"><span>● LIVE TERMUX OUTPUT</span><span>ZYVORA://LOCAL</span></div><div id="logs" class="logs"><div class="log muted">Waiting for installer output…</div></div></div>
+      <div class="terminal"><div class="terminal-head"><span>● REAL TERMUX OUTPUT</span><span>ZYVORA://LOCAL</span></div><div id="logs" class="logs"><div class="log muted">Waiting for Termux output…</div></div></div>
       <div class="actions"><button id="new-setup" class="primary hidden">CREATE ANOTHER SETUP</button></div>
     </section>
     <footer><span>ZYVORA ULTRA © 2026 · WEB SETUP</span><span>LOCALHOST BRIDGE · NO CLOUD CONNECTION</span></footer>
