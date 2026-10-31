@@ -24,6 +24,17 @@ zyvora-web
 
 Open **http://127.0.0.1:8765** in the same phone's browser. Stop with `Ctrl+C` in Termux.
 
+## Auto Update option
+
+On the setup selection screen, enable **AUTO UPDATE** to run these fixed commands before the selected package installs:
+
+```bash
+pkg update -y
+pkg upgrade -y
+```
+
+This refreshes package indexes and upgrades already-installed Termux packages. It is optional and is shown in the review step before execution.
+
 ## Security
 
 - Binds only to `127.0.0.1`, not Wi-Fi or the public internet.
