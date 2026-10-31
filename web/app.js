@@ -7,7 +7,7 @@ const groups=[
  ["TERMINAL EXPERIENCE",["figlet","fastfetch","tmux","htop","toilet","zsh"]]
 ];
 const defaults=["git","python","nodejs","curl","ruby","php","zip","nano","wget","vim","unzip","cpp","golang","build-tools","rust","java","cmake","apache","php-server","sqlite","node-server","nginx","openssh","dns-tools","tailscale","netcat","openssl","figlet","fastfetch","tmux","htop","toilet","zsh"];
-let selected=new Set(defaults),labels={};
+let selected=new Set(defaults),labels={},autoUpdate=false;
 const $=id=>document.getElementById(id);
 function render(){
  const q=$("search").value.toLowerCase();
@@ -21,12 +21,12 @@ function render(){
 }
 function updateCount(){$("count").textContent=selected.size;$("review").disabled=!selected.size;$("selection-note").textContent=selected.size?`${selected.size} items selected.`:"Choose one or more tools to continue."}
 function show(id){["select-screen","review-screen","progress-screen"].forEach(x=>$(x).classList.toggle("hidden",x!==id))}
-function review(){const names=[...selected].map(k=>labels[k]||k);$("review-list").innerHTML=names.map(n=>`<span class="tag">${escapeHtml(n)}</span>`).join("");$("confirm").checked=false;$("setup").disabled=true;show("review-screen")}
+function review(){const names=[...selected].map(k=>labels[k]||k);if(autoUpdate)names.unshift("AUTO UPDATE: pkg update + pkg upgrade -y");$("review-list").innerHTML=names.map(n=>`<span class="tag">${escapeHtml(n)}</span>`).join("");$("confirm").checked=false;$("setup").disabled=true;show("review-screen")}
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function start(){
  $("setup").disabled=true;show("progress-screen");$("logs").innerHTML="";$("progress-title").textContent="Installing packages";
  try{
-  const res=await fetch("/api/setup",{method:"POST",headers:{"Content-Type":"application/json","X-Zyvora-Token":token},body:JSON.stringify({packages:[...selected],confirmed:true})});
+  const res=await fetch("/api/setup",{method:"POST",headers:{"Content-Type":"application/json","X-Zyvora-Token":token},body:JSON.stringify({packages:[...selected],auto_update:autoUpdate,confirmed:true})});
   const data=await res.json();if(!res.ok)throw new Error(data.error||"Could not start setup");
   poll();
  }catch(e){addLog({time:new Date().toLocaleTimeString(),message:e.message,kind:"error"});$("status-pill").textContent="ERROR"}
