@@ -1,0 +1,3 @@
+const toast=document.getElementById('toast');let timer;
+document.querySelectorAll('[data-toast]').forEach(btn=>btn.addEventListener('click',()=>{toast.textContent=btn.dataset.toast;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),2600)}));
+const links=[...document.querySelectorAll('.nav nav a')];const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id))}})},{rootMargin:'-35% 0px -55%'});sections.forEach(s=>io.observe(s));
