@@ -7,7 +7,7 @@ const groups=[
  ["TERMINAL EXPERIENCE",["figlet","fastfetch","tmux","htop","toilet","zsh"]]
 ];
 const defaults=["git","python","nodejs","curl","ruby","php","zip","nano","wget","vim","unzip","cpp","golang","build-tools","rust","java","cmake","apache","php-server","sqlite","node-server","nginx","openssh","dns-tools","tailscale","netcat","openssl","figlet","fastfetch","tmux","htop","toilet","zsh"];
-let selected=new Set(defaults),labels={},autoUpdate=false;
+let selected=new Set(defaults),labels={},autoUpdate=false,updateRepo=false;
 const $=id=>document.getElementById(id);
 function render(){
  const q=$("search").value.toLowerCase();
@@ -21,12 +21,12 @@ function render(){
 }
 function updateCount(){$("count").textContent=selected.size;$("review").disabled=!selected.size;$("selection-note").textContent=selected.size?`${selected.size} items selected.`:"Choose one or more tools to continue."}
 function show(id){["select-screen","review-screen","progress-screen"].forEach(x=>$(x).classList.toggle("hidden",x!==id))}
-function review(){const names=[...selected].map(k=>labels[k]||k);if(autoUpdate)names.unshift("AUTO UPDATE: pkg update + pkg upgrade -y");$("review-list").innerHTML=names.map(n=>`<span class="tag">${escapeHtml(n)}</span>`).join("");$("confirm").checked=false;$("setup").disabled=true;show("review-screen")}
+function review(){const names=[...selected].map(k=>labels[k]||k);if(autoUpdate)names.unshift("AUTO UPDATE TERMUX: pkg update + pkg upgrade -y");if(updateRepo)names.unshift("UPDATE ZYVORA REPO: git pull --ff-only");$("review-list").innerHTML=names.map(n=>`<span class="tag">${escapeHtml(n)}</span>`).join("");$("confirm").checked=false;$("setup").disabled=true;show("review-screen")}
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function start(){
  $("setup").disabled=true;show("progress-screen");$("logs").innerHTML="";$("progress-title").textContent="Installing packages";
  try{
-  const res=await fetch("/api/setup",{method:"POST",headers:{"Content-Type":"application/json","X-Zyvora-Token":token},body:JSON.stringify({packages:[...selected],auto_update:autoUpdate,confirmed:true})});
+  const res=await fetch("/api/setup",{method:"POST",headers:{"Content-Type":"application/json","X-Zyvora-Token":token},body:JSON.stringify({packages:[...selected],auto_update:autoUpdate,update_repo:updateRepo,confirmed:true})});
   const data=await res.json();if(!res.ok)throw new Error(data.error||"Could not start setup");
   poll();
  }catch(e){addLog({time:new Date().toLocaleTimeString(),message:e.message,kind:"error"});$("status-pill").textContent="ERROR"}
@@ -45,6 +45,8 @@ async function poll(){
  }catch(e){addLog({time:new Date().toLocaleTimeString(),message:"Lost connection to local Termux bridge: "+e.message,kind:"error"});$("status-pill").textContent="DISCONNECTED"}
 }
 $("search").addEventListener("input",render);
+$("update-repo").addEventListener("change",e=>{updateRepo=e.target.checked});
+$("auto-update").addEventListener("change",e=>{autoUpdate=e.target.checked});
 $("select-all").onclick=()=>{groups.flatMap(g=>g[1]).forEach(k=>selected.add(k));render()};
 $("clear").onclick=()=>{selected.clear();render()};
 $("review").onclick=review;
