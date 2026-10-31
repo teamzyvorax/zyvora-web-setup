@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">ZYVORA ULTRA</title><desc id="desc">Futuristic neon Z mark in a cyberpunk frame.</desc>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#45d9ff"/><stop offset=".52" stop-color="#38f5ae"/><stop offset="1" stop-color="#a78bfa"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="512" height="512" rx="92" fill="#080a10"/><path d="M90 44h332l46 46v332l-46 46H90l-46-46V90z" fill="none" stroke="url(#g)" stroke-width="9" opacity=".9"/>
+<path d="M140 151h232v52L205 310h167v52H140v-52l167-107H140z" fill="none" stroke="url(#g)" stroke-width="20" stroke-linejoin="bevel" filter="url(#glow)"/>
+<path d="M113 410h286" stroke="#38f5ae" stroke-width="5" opacity=".7"/><circle cx="113" cy="410" r="6" fill="#45d9ff"/><circle cx="399" cy="410" r="6" fill="#a78bfa"/>
+</svg>
