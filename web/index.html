@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="zyvora-token" content="__ZYVORA_TOKEN__">
+  <title>ZYVORA ULTRA — WEB SETUP</title>
+  <meta name="description" content="ZYVORA ULTRA WEB SETUP — build and manage your Termux environment from a secure local dashboard.">
+  <meta name="theme-color" content="#080a10">
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="glow glow-a"></div><div class="glow glow-b"></div>
+  <header class="topbar">
+    <div class="brand"><img class="brand-logo" src="/logo.svg" alt="ZYVORA ULTRA logo"><div><b>ZYVORA <span>ULTRA</span></b><small>WEB SETUP BUILDER</small></div></div>
+    <div class="local"><i></i> LOCAL DEVICE ONLY</div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="hero-logo-wrap"><img class="hero-logo" src="/logo.svg" alt="ZYVORA ULTRA"></div>
+      <div class="eyebrow">TERMUX • PACKAGE AUTOMATION • LIVE LOGS</div>
+      <h1>WEB SETUP <em>BUILDER.</em></h1>
+      <p>Select tools, review your setup, then install everything from one button.</p>
+      <div class="steps"><span class="active">01 SELECT</span><b></b><span>02 REVIEW</span><b></b><span>03 INSTALL</span></div>
+    </section>
+    <section id="select-screen" class="panel">
+      <div class="section-head"><div><div class="eyebrow">PACKAGE LIBRARY</div><h2>Choose your tools</h2></div><div class="counter"><strong id="count">0</strong><small>SELECTED</small></div></div>
+      <div class="toolbar"><input id="search" type="search" placeholder="Search packages…"><button id="select-all" class="ghost">Select all</button><button id="clear" class="ghost">Clear</button></div>
+      <div id="groups" class="groups"><div class="loading">Loading package catalog…</div></div>
+      <div class="bottom-bar"><span id="selection-note">Choose one or more tools to continue.</span><button id="review" class="primary" disabled>REVIEW SETUP <b>→</b></button></div>
+    </section>
+    <section id="review-screen" class="panel hidden">
+      <div class="eyebrow">STEP 02 / CONFIRMATION</div><h2>Review your setup</h2>
+      <p class="muted">Check the package list before allowing Termux to install it.</p>
+      <div id="review-list" class="review-list"></div>
+      <label class="confirm"><input id="confirm" type="checkbox"><span>I reviewed this list and authorize these packages to be installed in this Termux environment.</span></label>
+      <div class="actions"><button id="back" class="ghost">← BACK TO SELECTION</button><button id="setup" class="primary" disabled>⚡ SETUP NOW</button></div>
+      <p class="tiny">Only predefined package selections are accepted. No arbitrary shell commands are run.</p>
+    </section>
+    <section id="progress-screen" class="panel hidden">
+      <div class="section-head"><div><div class="eyebrow">STEP 03 / LIVE EXECUTION</div><h2 id="progress-title">Installing packages</h2></div><div id="status-pill" class="pill">RUNNING</div></div>
+      <div class="progress-meta"><span id="progress-label">Preparing…</span><b id="progress-percent">0%</b></div>
+      <div class="progress"><i id="progress-fill"></i></div>
+      <div class="terminal"><div class="terminal-head"><span>● LIVE TERMUX OUTPUT</span><span>ZYVORA://LOCAL</span></div><div id="logs" class="logs"><div class="log muted">Waiting for installer output…</div></div></div>
+      <div class="actions"><button id="new-setup" class="primary hidden">CREATE ANOTHER SETUP</button></div>
+    </section>
+    <footer><span>ZYVORA ULTRA © 2026 · WEB SETUP</span><span>LOCALHOST BRIDGE · NO CLOUD CONNECTION</span></footer>
+  </main>
+</body>
+</html>
