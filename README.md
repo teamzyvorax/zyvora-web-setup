@@ -47,3 +47,10 @@ Do not expose this service through a public tunnel or change its bind address to
 ## Notes
 
 Package availability can vary by Termux repository, version, and architecture. The live log reports package-manager errors and continues. PHP Server and Node.js Server are usage presets; select PHP or Node.js to install the runtime first.
+
+## Optional website update controls
+
+The selection screen includes two independent options:
+
+- **UPDATE ZYVORA REPO** runs `git -C <project-folder> pull --ff-only` before setup to fetch the latest repository files. It requires this folder to be a Git clone with a configured upstream and no conflicting local changes. Restart `zyvora-web` after the update so Python backend changes are loaded.
+- **AUTO UPDATE TERMUX** runs `pkg update -y` and `pkg upgrade -y` before selected package installs.
