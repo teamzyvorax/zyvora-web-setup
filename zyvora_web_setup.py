@@ -46,9 +46,29 @@ def log(message, kind="info"):
         state["logs"].append(line)
         state["logs"] = state["logs"][-500:]
 
-def package_worker(keys):
+def run_update_command(args, title):
+    log("$ " + " ".join(args), "command")
+    try:
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line:
+                log(line)
+        code = proc.wait()
+        if code != 0:
+            log(f"{title} failed (exit code {code}); continuing with selected installs.", "warn")
+        else:
+            log(f"{title} completed.", "success")
+    except Exception as exc:
+        log(f"{title} could not run: {exc}", "error")
+
+def package_worker(keys, auto_update=False):
     with state_lock:
         state.update(running=True, finished=False, success=None, current="", logs=[], total=0, done=0)
+    if auto_update:
+        log("AUTO UPDATE enabled: refreshing Termux package lists and upgrading installed packages.", "info")
+        run_update_command(["pkg", "update", "-y"], "Package list update")
+        run_update_command(["pkg", "upgrade", "-y"], "Installed package upgrade")
     expanded = []
     for key in keys:
         expanded.extend(PACKAGES.get(key, []))
@@ -148,6 +168,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"error": "Invalid request size"}, 400)
             payload = json.loads(self.rfile.read(length))
             keys = payload.get("packages", [])
+            auto_update = payload.get("auto_update", False)
+            if not isinstance(auto_update, bool):
+                return self._json({"error": "Invalid auto-update setting"}, 400)
             if payload.get("confirmed") is not True:
                 return self._json({"error": "Review and confirm before installing"}, 400)
             if not isinstance(keys, list) or not keys or len(keys) > 60:
@@ -157,7 +180,7 @@ class Handler(BaseHTTPRequestHandler):
             with state_lock:
                 if state["running"]:
                     return self._json({"error": "A setup is already running"}, 409)
-            threading.Thread(target=package_worker, args=(keys,), daemon=True).start()
+            threading.Thread(target=package_worker, args=(keys, auto_update), daemon=True).start()
             self._json({"ok": True, "message": "Setup started"})
         except (ValueError, json.JSONDecodeError):
             self._json({"error": "Invalid JSON"}, 400)
