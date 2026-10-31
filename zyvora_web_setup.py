@@ -62,9 +62,18 @@ def run_update_command(args, title):
     except Exception as exc:
         log(f"{title} could not run: {exc}", "error")
 
-def package_worker(keys, auto_update=False):
+def update_repository():
+    if not (BASE / ".git").exists():
+        log("Repository update skipped: this folder is not a Git checkout.", "warn")
+        return
+    run_update_command(["git", "-C", str(BASE), "pull", "--ff-only"], "ZYVORA repository update")
+
+def package_worker(keys, auto_update=False, update_repo=False):
     with state_lock:
         state.update(running=True, finished=False, success=None, current="", logs=[], total=0, done=0)
+    if update_repo:
+        log("Repository update selected: fetching the latest ZYVORA WEB SETUP files.", "info")
+        update_repository()
     if auto_update:
         log("AUTO UPDATE enabled: refreshing Termux package lists and upgrading installed packages.", "info")
         run_update_command(["pkg", "update", "-y"], "Package list update")
@@ -169,6 +178,9 @@ class Handler(BaseHTTPRequestHandler):
             payload = json.loads(self.rfile.read(length))
             keys = payload.get("packages", [])
             auto_update = payload.get("auto_update", False)
+            update_repo = payload.get("update_repo", False)
+            if not isinstance(update_repo, bool):
+                return self._json({"error": "Invalid repository update setting"}, 400)
             if not isinstance(auto_update, bool):
                 return self._json({"error": "Invalid auto-update setting"}, 400)
             if payload.get("confirmed") is not True:
@@ -180,7 +192,7 @@ class Handler(BaseHTTPRequestHandler):
             with state_lock:
                 if state["running"]:
                     return self._json({"error": "A setup is already running"}, 409)
-            threading.Thread(target=package_worker, args=(keys, auto_update), daemon=True).start()
+            threading.Thread(target=package_worker, args=(keys, auto_update, update_repo), daemon=True).start()
             self._json({"ok": True, "message": "Setup started"})
         except (ValueError, json.JSONDecodeError):
             self._json({"error": "Invalid JSON"}, 400)
