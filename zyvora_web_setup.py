@@ -1,6 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/python
 import json
 import secrets
+import shutil
 import threading
 import subprocess
 import time
@@ -12,9 +13,11 @@ HOST = "127.0.0.1"
 PORT = 8765
 BASE = Path(__file__).resolve().parent
 WEB = BASE / "web"
+PREFIX = Path(__import__("os").environ.get("PREFIX", "/data/data/com.termux/files/usr"))
 TOKEN = secrets.token_urlsafe(32)
+PKG = shutil.which("pkg") or str(PREFIX / "bin" / "pkg")
+GIT = shutil.which("git") or str(PREFIX / "bin" / "git")
 
-# Each UI key maps to a fixed Termux package list. No user-provided shell text is executed.
 PACKAGES = {
     "git": ["git"], "python": ["python"], "nodejs": ["nodejs"], "curl": ["curl"],
     "ruby": ["ruby"], "php": ["php"], "zip": ["zip"], "nano": ["nano"],
@@ -46,38 +49,48 @@ def log(message, kind="info"):
         state["logs"].append(line)
         state["logs"] = state["logs"][-500:]
 
-def run_update_command(args, title):
+def run_command(args, title, continue_on_error=False):
     log("$ " + " ".join(args), "command")
     try:
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                bufsize=1, env=__import__("os").environ.copy())
         for line in proc.stdout:
             line = line.rstrip()
             if line:
                 log(line)
         code = proc.wait()
         if code != 0:
-            log(f"{title} failed (exit code {code}); continuing with selected installs.", "warn")
+            log(f"{title} failed (exit code {code}).", "warn" if continue_on_error else "error")
         else:
             log(f"{title} completed.", "success")
+        return code
     except Exception as exc:
         log(f"{title} could not run: {exc}", "error")
+        return -1
+
+def run_update_command(args, title):
+    return run_command(args, title, continue_on_error=True)
 
 def update_repository():
     if not (BASE / ".git").exists():
         log("Repository update skipped: this folder is not a Git checkout.", "warn")
-        return
-    run_update_command(["git", "-C", str(BASE), "pull", "--ff-only"], "ZYVORA repository update")
+        return -1
+    return run_update_command([GIT, "-C", str(BASE), "pull", "--ff-only"], "ZYVORA repository update")
 
 def package_worker(keys, auto_update=False, update_repo=False):
     with state_lock:
         state.update(running=True, finished=False, success=None, current="", logs=[], total=0, done=0)
+    failures = []
     if update_repo:
         log("Repository update selected: fetching the latest ZYVORA WEB SETUP files.", "info")
-        update_repository()
+        if update_repository() != 0:
+            failures.append("ZYVORA repository update")
     if auto_update:
         log("AUTO UPDATE enabled: refreshing Termux package lists and upgrading installed packages.", "info")
-        run_update_command(["pkg", "update", "-y"], "Package list update")
-        run_update_command(["pkg", "upgrade", "-y"], "Installed package upgrade")
+        if run_update_command([PKG, "update", "-y"], "Package list update") != 0:
+            failures.append("pkg update")
+        if run_update_command([PKG, "upgrade", "-y"], "Installed package upgrade") != 0:
+            failures.append("pkg upgrade")
     expanded = []
     for key in keys:
         expanded.extend(PACKAGES.get(key, []))
@@ -86,27 +99,15 @@ def package_worker(keys, auto_update=False, update_repo=False):
         state["total"] = len(expanded)
     if not expanded:
         log("No installable packages selected. Runtime presets need their matching runtime selected.", "warn")
-    failures = []
     for package in expanded:
         with state_lock:
             state["current"] = package
-        log(f"$ pkg install -y {package}", "command")
-        try:
-            proc = subprocess.Popen(["pkg", "install", "-y", package], stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True, bufsize=1)
-            for line in proc.stdout:
-                line = line.rstrip()
-                if line:
-                    log(line)
-            code = proc.wait()
-            if code == 0:
-                log(f"SUCCESS: {package}", "success")
-            else:
-                failures.append(package)
-                log(f"FAILED: {package} (exit code {code})", "error")
-        except Exception as exc:
+        code = run_command([PKG, "install", "-y", package], f"Installing {package}")
+        if code == 0:
+            log(f"SUCCESS: {package}", "success")
+        else:
             failures.append(package)
-            log(f"FAILED: {package}: {exc}", "error")
+            log(f"FAILED: {package} (exit code {code})", "error")
         with state_lock:
             state["done"] += 1
     for key in keys:
@@ -119,11 +120,11 @@ def package_worker(keys, auto_update=False, update_repo=False):
         state["finished"] = True
         state["success"] = len(failures) == 0
         state["current"] = ""
-    log("Setup completed successfully." if not failures else "Setup finished with package errors: " + ", ".join(failures),
-        "success" if not failures else "warn")
+    log("REAL TERMUX SETUP COMPLETED SUCCESSFULLY." if not failures else "SETUP FINISHED WITH ERRORS: " + ", ".join(failures),
+        "success" if not failures else "error")
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "ZYVORA-LocalBridge/1.0"
+    server_version = "ZYVORA-LocalBridge/1.1"
 
     def _headers(self, status=200, content_type="application/json; charset=utf-8"):
         self.send_response(status)
@@ -157,6 +158,8 @@ class Handler(BaseHTTPRequestHandler):
                      "/logo.svg": ("logo.svg", "image/svg+xml; charset=utf-8")}[path]
             self._headers(200, asset[1])
             self.wfile.write((WEB / asset[0]).read_bytes())
+        elif path == "/api/health":
+            self._json({"ok": True, "bridge": "online", "pkg": PKG, "pkg_exists": Path(PKG).exists(), "project": str(BASE)})
         elif path == "/api/status":
             with state_lock:
                 snapshot = dict(state)
@@ -179,21 +182,21 @@ class Handler(BaseHTTPRequestHandler):
             keys = payload.get("packages", [])
             auto_update = payload.get("auto_update", False)
             update_repo = payload.get("update_repo", False)
-            if not isinstance(update_repo, bool):
-                return self._json({"error": "Invalid repository update setting"}, 400)
-            if not isinstance(auto_update, bool):
-                return self._json({"error": "Invalid auto-update setting"}, 400)
+            if not isinstance(update_repo, bool) or not isinstance(auto_update, bool):
+                return self._json({"error": "Invalid update setting"}, 400)
             if payload.get("confirmed") is not True:
                 return self._json({"error": "Review and confirm before installing"}, 400)
             if not isinstance(keys, list) or not keys or len(keys) > 60:
                 return self._json({"error": "Select at least one item"}, 400)
             if any(not isinstance(k, str) or k not in LABELS for k in keys):
                 return self._json({"error": "Unknown selection rejected"}, 400)
+            if not Path(PKG).exists():
+                return self._json({"error": f"Termux pkg executable not found: {PKG}"}, 503)
             with state_lock:
                 if state["running"]:
                     return self._json({"error": "A setup is already running"}, 409)
             threading.Thread(target=package_worker, args=(keys, auto_update, update_repo), daemon=True).start()
-            self._json({"ok": True, "message": "Setup started"})
+            self._json({"ok": True, "message": "REAL Termux setup started"})
         except (ValueError, json.JSONDecodeError):
             self._json({"error": "Invalid JSON"}, 400)
 
@@ -202,8 +205,9 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     print("\n  ZYVORA ULTRA — WEB SETUP")
-    print("  Local-only Termux package installer")
+    print("  REAL local Termux package installer")
     print(f"\n  Open: http://{HOST}:{PORT}")
+    print(f"  pkg: {PKG} {'[OK]' if Path(PKG).exists() else '[MISSING]'}")
     print("  This service is accessible only on this device.")
     print("  Press Ctrl+C to stop.\n")
     server = ThreadingHTTPServer((HOST, PORT), Handler)
